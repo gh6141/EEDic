@@ -22,13 +22,17 @@
     <div id="result-box">
         <div id="word-text">English Dictionary</div>
         <div id="def-text">Tap the button and say a word. (e.g., "Apple")</div>
+        <button id="repeat">Repeat</button>
     </div>
 
     <script>
         const btn = document.getElementById('btn');
+        const repeat=document.getElementById('repeat');
         const status = document.getElementById('status');
         const wordText = document.getElementById('word-text');
         const defText = document.getElementById('def-text');
+        const meaning="";
+        const word="";
 
         // 音声認識の設定
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -46,9 +50,14 @@
                 console.log("Recognition already started");
             }
         };
+        
+         repeat.onclick = () => {
+             speak(word + ". " + meaning);
+        };
 
+        
         recognition.onresult = async (event) => {
-            const word = event.results[0][0].transcript.toLowerCase().trim();
+            word = event.results[0][0].transcript.toLowerCase().trim();
             wordText.innerText = word;
             defText.innerText = "Searching...";
             btn.style.background = "#007bff";
@@ -58,7 +67,7 @@
                 const res = await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/' + word);
                 
                 const data = await res.json();
-                 speak("Under analysis");
+                 //speak("Under analysis");
                 
                 // APIが配列で返ってこない（エラー）場合
                 if (!Array.isArray(data) || data.length === 0) {
@@ -67,7 +76,7 @@
                     speak(msg);
                 } else {
                     // ★重要：階層を安全にたどる
-                    const meaning = data[0].meanings[0].definitions[0].definition;
+                    meaning = data[0].meanings[0].definitions[0].definition;
                     defText.innerText = meaning;
                     speak(word + ". " + meaning);
                 }
