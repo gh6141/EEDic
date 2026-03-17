@@ -44,31 +44,35 @@
             btn.style.background = "#ff4757";
         };
 
-        recognition.onresult = async (event) => {
-            const word = event.results[0][0].transcript.toLowerCase();
-            wordTitle.innerText = word;
-            definition.innerText = "Searching...";
-            btn.style.background = "#007bff";
+recognition.onresult = async (event) => {
+    const word = event.results[0][0].transcript.toLowerCase(); // 認識精度の向上
+    wordTitle.innerText = word;
+    definition.innerText = "Searching...";
 
-            try {
-                const res = await fetch(`https://dictionaryapi.dev{word}`);
-                const data = await res.json();
-                
-                if (data.title === "No Definitions Found") {
-                    const msg = "Sorry, I couldn't find " + word;
-                    definition.innerText = msg;
-                    speak(msg);
-                } else {
-                    // 最初の意味を取得
-                    const meaning = data[0].meanings[0].definitions[0].definition;
-                    definition.innerText = meaning;
-                    speak(word + ". " + meaning);
-                }
-            } catch (e) {
-                definition.innerText = "Network error. Please try again.";
-            }
-            status.innerText = "Done";
-        };
+    try {
+        const res = await fetch(`https://dictionaryapi.dev{word}`);
+        const data = await res.json();
+        
+        if (!Array.isArray(data)) {
+            const msg = "Sorry, no definition for " + word;
+            definition.innerText = msg;
+            speak(msg);
+        } else {
+            // ★ここがポイント：階層が深いため、安全に取り出す
+            const firstMeaning = data[0].meanings[0].definitions[0].definition;
+            definition.innerText = firstMeaning;
+            speak(word + ". " + firstMeaning);
+        }
+    } catch (e) {
+        console.error(e); // ブラウザのコンソールでエラーを確認できます
+        definition.innerText = "Network or Data error.";
+        speak("Connection error.");
+    }
+};
+
+
+        
+     
 
         recognition.onend = () => {
             btn.style.background = "#007bff";
