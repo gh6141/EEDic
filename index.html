@@ -2,81 +2,82 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voice English Dictionary</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Voice Dict</title>
     <style>
-        body { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #f8f9fa; font-family: -apple-system, sans-serif; text-align: center; }
-        #btn { width: 220px; height: 220px; border-radius: 50%; border: 8px solid #fff; background: #007bff; color: white; font-size: 26px; font-weight: bold; cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.1); transition: 0.3s; -webkit-tap-highlight-color: transparent; }
+        body { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #f0f2f5; font-family: sans-serif; text-align: center; }
+        #btn { width: 200px; height: 200px; border-radius: 50%; border: 8px solid #fff; background: #007bff; color: white; font-size: 22px; font-weight: bold; cursor: pointer; box-shadow: 0 8px 15px rgba(0,0,0,0.1); transition: 0.2s; -webkit-tap-highlight-color: transparent; }
         #btn:active { transform: scale(0.9); background: #0056b3; }
-        #status { margin-top: 20px; color: #666; font-size: 14px; }
-        #result-container { margin: 20px; padding: 25px; background: white; border-radius: 15px; width: 85%; max-width: 500px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        #word-title { font-size: 28px; color: #333; margin-bottom: 10px; text-transform: capitalize; }
-        #definition { font-size: 18px; color: #555; line-height: 1.5; }
+        #status { margin-top: 15px; color: #666; font-size: 14px; height: 20px; }
+        #result-box { margin: 20px; padding: 20px; background: white; border-radius: 15px; width: 85%; max-width: 500px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); min-height: 120px; }
+        #word-text { font-size: 26px; color: #333; margin-bottom: 10px; font-weight: bold; text-transform: capitalize; }
+        #def-text { font-size: 17px; color: #555; line-height: 1.6; text-align: left; }
     </style>
 </head>
 <body>
 
-    <button id="btn">TAP & SPEAK</button>
+    <button id="btn">PUSH & SPEAK</button>
     <div id="status">Ready</div>
 
-    <div id="result-container">
-        <div id="word-title">Hello!</div>
-        <div id="definition">Tap the button and say an English word.</div>
+    <div id="result-box">
+        <div id="word-text">English Dictionary</div>
+        <div id="def-text">Tap the button and say a word. (e.g., "Apple")</div>
     </div>
 
     <script>
         const btn = document.getElementById('btn');
         const status = document.getElementById('status');
-        const wordTitle = document.getElementById('word-title');
-        const definition = document.getElementById('definition');
+        const wordText = document.getElementById('word-text');
+        const defText = document.getElementById('def-text');
 
+        // 音声認識の設定
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            alert("Speech Recognition is not supported in this browser. Please use Chrome or Safari.");
-        }
         const recognition = new SpeechRecognition();
         recognition.lang = 'en-US';
+        recognition.interimResults = false;
 
         btn.onclick = () => {
-            window.speechSynthesis.cancel();
-            recognition.start();
-            status.innerText = "Listening...";
-            btn.style.background = "#ff4757";
+            window.speechSynthesis.cancel(); // 再生中の音声を停止
+            try {
+                recognition.start();
+                status.innerText = "Listening...";
+                btn.style.background = "#ff4757";
+            } catch (e) {
+                console.log("Recognition already started");
+            }
         };
 
-recognition.onresult = async (event) => {
-    const word = event.results[0][0].transcript.toLowerCase(); // 認識精度の向上
-    wordTitle.innerText = word;
-    definition.innerText = "Searching...";
+        recognition.onresult = async (event) => {
+            const word = event.results[0][0].transcript.toLowerCase().trim();
+            wordText.innerText = word;
+            defText.innerText = "Searching...";
+            btn.style.background = "#007bff";
 
-    try {
-        const res = await fetch(`https://dictionaryapi.dev{word}`);
-        const data = await res.json();
-        
-        if (!Array.isArray(data)) {
-            const msg = "Sorry, no definition for " + word;
-            definition.innerText = msg;
-            speak(msg);
-        } else {
-            // ★ここがポイント：階層が深いため、安全に取り出す
-            const firstMeaning = data[0].meanings[0].definitions[0].definition;
-            definition.innerText = firstMeaning;
-            speak(word + ". " + firstMeaning);
-        }
-    } catch (e) {
-        console.error(e); // ブラウザのコンソールでエラーを確認できます
-        definition.innerText = "Network or Data error.";
-        speak("Connection error.");
-    }
-};
-
-
-        
-     
+            try {
+                const res = await fetch(`https://dictionaryapi.dev{word}`);
+                const data = await res.json();
+                
+                // APIが配列で返ってこない（エラー）場合
+                if (!Array.isArray(data) || data.length === 0) {
+                    const msg = "Sorry, no definition found for " + word;
+                    defText.innerText = msg;
+                    speak(msg);
+                } else {
+                    // ★重要：階層を安全にたどる
+                    const meaning = data[0].meanings[0].definitions[0].definition;
+                    defText.innerText = meaning;
+                    speak(word + ". " + meaning);
+                }
+            } catch (e) {
+                defText.innerText = "Error: Check your internet connection.";
+                speak("Connection error.");
+            }
+            status.innerText = "Done";
+        };
 
         recognition.onend = () => {
             btn.style.background = "#007bff";
-            if(status.innerText === "Listening...") status.innerText = "Ready";
+            if (status.innerText === "Listening...") status.innerText = "Ready";
         };
 
         function speak(text) {
