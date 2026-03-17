@@ -58,6 +58,7 @@
                 const res = await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/' + word);
                 
                 const data = await res.json();
+                 speak("Under analysis");
                 
                 // APIが配列で返ってこない（エラー）場合
                 if (!Array.isArray(data) || data.length === 0) {
