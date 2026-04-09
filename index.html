@@ -75,7 +75,7 @@
                     defText.innerText = msg;
                     speak(msg);
                 } else {
-                    // ★重要：階層を安全にたどる
+                    
                     meaning = data[0].meanings[0].definitions[0].definition;
                     defText.innerText = meaning;
                     speak(word + ". " + meaning);
